@@ -1,16 +1,30 @@
-- name : Configure Docker on EC2 Instances
-  hosts : all
+- name: Configure Docker on EC2 Instances
+  hosts: all
   become: true
-  connection : ssh
-  tasks : 
-  - name: updating apt
-    command : sudo apt-get update
+  connection: ssh
 
-  - name : Install Docker
-    command : sudo apt-get install -y docker.io
+  tasks:
+    - name: Updating apt
+      apt:
+        update_cache: yes
 
-  - name : Start Docker Service
-    command : sudo systemctl start docker
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
 
-  - name: Deploy Docker Container
-    command: docker run -itd -p 8084:8081 shubhamkushwah123/finance-me:1.0
+    - name: Start Docker Service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Pull latest Docker image from Docker Hub
+      command: docker pull nithish164/banking-app:v1.0.0
+
+    - name: Remove existing container if running
+      shell: |
+        docker ps -q --filter "name=banking-app" | grep -q . && docker rm -f banking-app || true
+
+    - name: Run the Banking App container
+      command: docker run -d --name banking-app -p 8084:8081 nithish164/banking-app:v1.0.0
